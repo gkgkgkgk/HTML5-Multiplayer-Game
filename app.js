@@ -22,8 +22,25 @@ var Player = function(id){
         right:false,
         left:false,
         up:false,
-        down:false
+        down:false,
+        speed:5
     }
+
+    self.updatePosition = function(){
+        if(self.right){
+            self.x += self.speed;
+        }
+        if(self.left){
+            self.x -= self.speed;
+        }
+        if(self.up){
+            self.y -= self.speed;
+        }
+        if(self.down){
+            self.y += self.speed;
+        }
+    }
+
     return self;
 }
 
@@ -32,12 +49,27 @@ io.sockets.on('connection', function (socket){
     socket.id = Math.random();
     
     socketList[socket.id] = socket;
-
-    playerList[socket.id] = Player(socket.id);
+    var player = Player(socket.id);
+    playerList[socket.id] = player;
 
     socket.on('disconnect', function(){
         delete socketList[socket.id];
         delete playerList[socket.id];
+    })
+
+    socket.on('keypress', function(data){
+        if(data.inputId === 'up'){
+            player.up = data.state;
+        }
+        else if(data.inputId === 'down'){
+            player.down = data.state;
+        }
+        else if(data.inputId === 'right'){
+            player.right = data.state;
+        }
+        else if(data.inputId === 'left'){
+            player.left = data.state;
+        }
     })
 
 })
@@ -46,8 +78,7 @@ setInterval(function(){
     var pack = [];
     for(var i in playerList){
         var player = playerList[i];
-        player.x++;
-        player.y++;
+        player.updatePosition();
         pack.push({
             x:player.x,
             y:player.y,
@@ -57,5 +88,5 @@ setInterval(function(){
     for(var i in socketList){
         var socket = socketList[i]
         socket.emit('newPosition', pack);
-    }
+    } 
 }, 20)
